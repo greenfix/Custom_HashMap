@@ -48,7 +48,7 @@ public class Cosh {
     /**
      * @param K
      * @param V
-     * @return Object value
+     * @return Object value or null
      * if the key or value is null, an exception is thrown
      * if the key exists then the value is overwritten
      * @throws IllegalArgumentException
@@ -110,9 +110,11 @@ public class Cosh {
      * @throws IllegalArgumentException
      */
     public Object get(Object K) {
+
         if (K == null) {
             throw new IllegalArgumentException();
         }
+
         int hash = hash(K);
         Uzel uzel = kase[hash];
         if (kase[hash] == null) {
@@ -139,13 +141,16 @@ public class Cosh {
 
     /**
      * @param K
-     * @return true if the node is deleted, false if not
+     * @return Object value or null
+     * if the key is null then an exception is thrown
      * @throws IllegalArgumentException
      */
     public Object remove(Object K) {
+
         if (K == null) {
             throw new IllegalArgumentException();
         }
+
         int hash = hash(K);
         Uzel uzel = kase[hash];
         if (kase[hash] == null) {
@@ -153,7 +158,6 @@ public class Cosh {
             return null;
         }
 
-        // TODO: 31.10.2019 - если узел совсем не найден
         int level = 0;
         Uzel prevUzel = uzel;
         Object oldValue;
@@ -166,6 +170,9 @@ public class Cosh {
             }
         }
         oldValue = uzel.getValue();
+        if(!K.equals(uzel.getKey())){
+            return null;
+        }
         if (level == 0) {
             if (uzel.getNext() == null) {
                 kase[hash] = null;

@@ -116,7 +116,7 @@ class CoshTest {
 
         // Positive tests
 
-        // remove middle form collision (two link)
+       // remove middle form collision (two link)
         assertEquals("two link", cosh.remove("49"));
         assertEquals("four link", cosh.get("94"));
         assertEquals("three link", cosh.get("58"));
@@ -154,6 +154,12 @@ class CoshTest {
         } catch (Throwable e) {
             assertTrue(false);
         }
+
+        // попытка удалить запись,
+        // у которой хэш ключа совпадает с корзиной,
+        // содержащей несколько записей
+        assertEquals(null, cosh.remove("85"));
+
     }
 
     @Test
