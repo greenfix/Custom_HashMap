@@ -28,9 +28,9 @@ public class Cosh {
      * @param K key
      * @return index of basket
      */
-    private int getIndexBasket(Object K) {
+    public int getIndexBasket(Object K) {
 
-        return (K == null) ? 0 : (Math.abs(K.hashCode() % capacity) + 1);
+        return (K == null) ? 0 : ((Math.abs(K.hashCode()) % capacity));
     }
 
     /**
@@ -48,41 +48,38 @@ public class Cosh {
     /**
      * @param K key
      * @param V value
-     * @return  value
+     * @return value
      * if the key exists then the value is overwritten
      */
     public Object put(Object K, Object V) {
-
         if ((1f * size / capacity) >= LOAD_FACTOR) {
             expansionKase();
         }
-
         int hash = getIndexBasket(K);
-        if (!(kase[hash] == null)) {
-            Uzel oldUzel = kase[hash];
-            Object oldKey = oldUzel.getKey();
-            if (oldKey == null || oldKey.equals(K)) {
-                // rewrite
-                Object oldValue = oldUzel.getValue();
-                oldUzel.setValue(V);
-                return oldValue;
-            } else {
-                // collision
-                while (!(oldUzel.getNext() == null)) {
-                    oldUzel = oldUzel.getNext();
-                }
-                Uzel uzel = new Uzel(hash, K, V, null);
-                oldUzel.setNext(uzel);
-                size++;
-                return null;
-            }
-        } else {
-            // add
-            Uzel uzel = new Uzel(hash, K, V, null);
-            kase[hash] = uzel;
+        Uzel uzel = kase[hash];
+        if (uzel == null) {
+            // first in basket - simple add
+            kase[hash] = new Uzel(hash, K, V, null);
             size++;
-            return null;
+        } else {
+            while (true) {
+                if (ifNeedUzel(K, uzel)) {
+                    // rewrite
+                    Object oldValue = uzel.getValue();
+                    uzel.setValue(V);
+                    return oldValue;
+                }
+                if (uzel.getNext() == null) {
+                    // last in basket - add to end
+                    uzel.setNext(new Uzel(hash, K, V, null));
+                    size++;
+                    break;
+                }
+                uzel = uzel.getNext();
+            }
         }
+
+        return null;
     }
 
     /**
@@ -90,110 +87,93 @@ public class Cosh {
      * @return true if this map contains a mapping for the specified key
      */
     public boolean containsKey(Object K) {
-
-        if (K == null) {
-            return !(kase[0] == null);
-        }
-
         int hash = getIndexBasket(K);
         Uzel uzel = kase[hash];
-        if (kase[hash] == null) {
+        if (uzel == null) {
 
             return false;
         }
-
-        while (!K.equals(uzel.getKey())) {
+        while (true) {
+            if (ifNeedUzel(K, uzel)) {
+                return true;
+            }
             uzel = uzel.getNext();
-            if (uzel == null || uzel.getNext() == null) {
-                break;
+            if (uzel == null) {
+                return false;
             }
         }
-
-        return K.equals(uzel.getKey());
     }
 
     /**
      * @param K key
-     * @return  value
+     * @return value
      */
     public Object get(Object K) {
-
-        int hash = getIndexBasket(K);
-        Uzel uzel = kase[hash];
-        if (kase[hash] == null) {
+        Uzel uzel = kase[getIndexBasket(K)];
+        if (uzel == null) {
 
             return null;
         }
-        while (K != null && !K.equals(uzel.getKey())) {
-            uzel = uzel.getNext();
-            if (uzel == null || uzel.getNext() == null) {
+        while (true) {
+            if (ifNeedUzel(K, uzel)) {
                 break;
             }
-        }
-
-        if (uzel == null) {
-            return null;
-        } else {
-            if (K == null || K.equals(uzel.getKey())) {
-                return uzel.getValue();
-            } else {
+            uzel = uzel.getNext();
+            if (uzel == null) {
                 return null;
             }
         }
+
+        return uzel.getValue();
     }
 
     /**
      * @param K key
-     * @return  value
+     * @return value
      */
     public Object remove(Object K) {
-
         int hash = getIndexBasket(K);
         Uzel uzel = kase[hash];
-        if (kase[hash] == null) {
+        if (uzel == null) {
 
             return null;
         }
-
         int level = 0;
         Uzel prevUzel = uzel;
-        Object oldValue = null;
-        if (K != null) {
-            while (!K.equals(uzel.getKey())) {
-                level++;
-                prevUzel = uzel;
-                uzel = uzel.getNext();
-                if (uzel.getNext() == null) {
-                    break;
-                }
+        while (true) {
+            if (ifNeedUzel(K, uzel)) {
+                break;
             }
-            oldValue = uzel.getValue();
-            if (!K.equals(uzel.getKey())) {
+            level++;
+            prevUzel = uzel;
+            uzel = uzel.getNext();
+            if (uzel == null) {
                 return null;
             }
         }
 
+        Object oldValue = uzel.getValue();
         if (level == 0) {
-            if (uzel.getNext() == null) {
-                kase[hash] = null;
-                uzel = null;
-            } else {
-                kase[hash] = uzel.getNext();
-                uzel = null;
-            }
+            kase[hash] = uzel.getNext();
         } else {
-            if (uzel.getNext() == null) {
-                prevUzel.setNext(null);
-                uzel = null;
-            } else {
-                prevUzel.setNext(uzel.getNext());
-                uzel = uzel.getNext();
-            }
+            prevUzel.setNext(uzel.getNext());
         }
 
         size--;
 
         return oldValue;
+    }
+
+    /**
+     * @param K key
+     * @param uzel uzel
+     * @return true if needle
+     */
+    public boolean ifNeedUzel(Object K, Uzel uzel) {
+        Object keyUzel = uzel.getKey();
+        return ((keyUzel == null && K == null) ||
+                (K != null && K.equals(keyUzel)) ||
+                (keyUzel != null && keyUzel.equals(K)));
     }
 
     /**

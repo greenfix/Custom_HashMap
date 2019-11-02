@@ -14,6 +14,15 @@ class CoshTest {
 
         // Positive tests
 
+        assertNull(cosh.put(0, "0"));
+        assertNull(cosh.put(null, "null"));
+        assertEquals("null", cosh.put(null, "16"));
+        assertEquals(2, cosh.size());
+        assertEquals("16", cosh.get(null));
+        assertEquals("16", cosh.remove(null));
+        assertEquals("0", cosh.remove(0));
+        assertEquals(0, cosh.size());
+
         // put
         assertNull(cosh.put("1", "one"));
         assertEquals("one", cosh.get("1"));
@@ -63,6 +72,10 @@ class CoshTest {
 
         // size test
         assertEquals(30007, cosh.size());
+
+        for (int i = 1; i <= 30000; i++) {
+            assertEquals("V_" + i, cosh.get(i));
+        }
 
         // other objects
         Cosh kCosh = new Cosh(1, 1);
@@ -126,7 +139,7 @@ class CoshTest {
         assertEquals("three link", cosh.remove("58"));
         assertEquals(2, cosh.size());
 
-        assertNull(cosh.remove(null));
+        assertEquals("null", cosh.remove(null));
         assertEquals(1, cosh.size());
 
         assertNull(cosh.remove("null"));
