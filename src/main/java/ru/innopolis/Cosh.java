@@ -2,12 +2,12 @@ package ru.innopolis;
 
 public class Cosh {
 
-    private static final float EXP = 0.75f;
+    private static final float LOAD_FACTOR = 0.75f;
     private static final float FACTOR = 2.0f;
 
-    private int kaseLen = 15;
-    private Uzel[] kase = new Uzel[kaseLen];
+    private int capacity = 16;
     private int size = 0;
+    private Uzel[] kase = new Uzel[capacity];
 
     /**
      *
@@ -17,28 +17,28 @@ public class Cosh {
     }
 
     /**
-     * @param K
-     * @param V
+     * @param K key
+     * @param V value
      */
     public Cosh(Object K, Object V) {
         this.put(K, V);
     }
 
     /**
-     * @param K
-     * @return Hashcode
+     * @param K key
+     * @return index of basket
      */
-    private int hash(Object K) {
+    private int getIndexBasket(Object K) {
 
-        return Math.abs(K.hashCode() % kaseLen);
+        return (K == null) ? 0 : (Math.abs(K.hashCode() % capacity) + 1);
     }
 
     /**
      *
      */
     private void expansionKase() {
-        kaseLen = (int) (kaseLen * FACTOR);
-        Uzel[] expansion = new Uzel[kaseLen];
+        capacity = (int) (capacity * FACTOR);
+        Uzel[] expansion = new Uzel[capacity];
         for (int i = 0; i < kase.length; i++) {
             expansion[i] = kase[i];
         }
@@ -46,28 +46,22 @@ public class Cosh {
     }
 
     /**
-     * @param K
-     * @param V
-     * @return Object value or null
-     * if the key or value is null, an exception is thrown
+     * @param K key
+     * @param V value
+     * @return  value
      * if the key exists then the value is overwritten
-     * @throws IllegalArgumentException
      */
     public Object put(Object K, Object V) {
 
-        if ((1f * size / kaseLen) >= EXP) {
+        if ((1f * size / capacity) >= LOAD_FACTOR) {
             expansionKase();
         }
 
-        if (K == null || V == null) {
-            throw new IllegalArgumentException();
-        }
-
-        int hash = hash(K);
+        int hash = getIndexBasket(K);
         if (!(kase[hash] == null)) {
             Uzel oldUzel = kase[hash];
             Object oldKey = oldUzel.getKey();
-            if (oldKey.equals(K)) {
+            if (oldKey == null || oldKey.equals(K)) {
                 // rewrite
                 Object oldValue = oldUzel.getValue();
                 oldUzel.setValue(V);
@@ -92,38 +86,47 @@ public class Cosh {
     }
 
     /**
-     * @param K
+     * @param K key
      * @return true if this map contains a mapping for the specified key
-     * if the key is null then an exception is thrown
-     * @throws IllegalArgumentException
      */
     public boolean containsKey(Object K) {
 
-        return !(get(K) == null);
+        if (K == null) {
+            return !(kase[0] == null);
+        }
+
+        int hash = getIndexBasket(K);
+        Uzel uzel = kase[hash];
+        if (kase[hash] == null) {
+
+            return false;
+        }
+
+        while (!K.equals(uzel.getKey())) {
+            uzel = uzel.getNext();
+            if (uzel == null || uzel.getNext() == null) {
+                break;
+            }
+        }
+
+        return K.equals(uzel.getKey());
     }
 
     /**
-     * @param K
-     * @return Object value
-     * if the key does not exist then null
-     * if the key is null then an exception is thrown
-     * @throws IllegalArgumentException
+     * @param K key
+     * @return  value
      */
     public Object get(Object K) {
 
-        if (K == null) {
-            throw new IllegalArgumentException();
-        }
-
-        int hash = hash(K);
+        int hash = getIndexBasket(K);
         Uzel uzel = kase[hash];
         if (kase[hash] == null) {
 
             return null;
         }
-        while (!K.equals(uzel.getKey())) {
+        while (K != null && !K.equals(uzel.getKey())) {
             uzel = uzel.getNext();
-            if (uzel.getNext() == null) {
+            if (uzel == null || uzel.getNext() == null) {
                 break;
             }
         }
@@ -131,7 +134,7 @@ public class Cosh {
         if (uzel == null) {
             return null;
         } else {
-            if (K.equals(uzel.getKey())) {
+            if (K == null || K.equals(uzel.getKey())) {
                 return uzel.getValue();
             } else {
                 return null;
@@ -140,18 +143,12 @@ public class Cosh {
     }
 
     /**
-     * @param K
-     * @return Object value or null
-     * if the key is null then an exception is thrown
-     * @throws IllegalArgumentException
+     * @param K key
+     * @return  value
      */
     public Object remove(Object K) {
 
-        if (K == null) {
-            throw new IllegalArgumentException();
-        }
-
-        int hash = hash(K);
+        int hash = getIndexBasket(K);
         Uzel uzel = kase[hash];
         if (kase[hash] == null) {
 
@@ -160,19 +157,22 @@ public class Cosh {
 
         int level = 0;
         Uzel prevUzel = uzel;
-        Object oldValue;
-        while (!K.equals(uzel.getKey())) {
-            level++;
-            prevUzel = uzel;
-            uzel = uzel.getNext();
-            if (uzel.getNext() == null) {
-                break;
+        Object oldValue = null;
+        if (K != null) {
+            while (!K.equals(uzel.getKey())) {
+                level++;
+                prevUzel = uzel;
+                uzel = uzel.getNext();
+                if (uzel.getNext() == null) {
+                    break;
+                }
+            }
+            oldValue = uzel.getValue();
+            if (!K.equals(uzel.getKey())) {
+                return null;
             }
         }
-        oldValue = uzel.getValue();
-        if(!K.equals(uzel.getKey())){
-            return null;
-        }
+
         if (level == 0) {
             if (uzel.getNext() == null) {
                 kase[hash] = null;
