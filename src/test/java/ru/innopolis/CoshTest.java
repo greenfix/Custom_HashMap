@@ -23,7 +23,7 @@ class CoshTest {
         assertEquals("0", cosh.remove(0));
         assertEquals(0, cosh.size());
 
-        // put
+//        // put
         assertNull(cosh.put("1", "one"));
         assertEquals("one", cosh.get("1"));
         assertEquals(1, cosh.size());
@@ -33,19 +33,19 @@ class CoshTest {
         assertEquals("two", cosh.get("2"));
         assertEquals(2, cosh.size());
 
-        // rewrite value
+//        // rewrite value
         assertEquals("one", cosh.put("1", "rewrite"));
         assertEquals("rewrite", cosh.get("1"));
         assertEquals(2, cosh.size());
 
         // collision
-        assertNull(cosh.put("49", "collision"));
-        assertEquals("collision", cosh.get("49"));
+        assertNull(cosh.put("10", "collision"));
+        assertEquals("collision", cosh.get("10"));
         assertEquals(3, cosh.size());
 
         // other objects
-        assertNull(cosh.put(100, 500));
-        assertEquals(500, cosh.get(100));
+        assertNull(cosh.put("100", 500));
+        assertEquals(500, cosh.get("100"));
 
         // size test
         assertEquals(4, cosh.size());
@@ -66,20 +66,21 @@ class CoshTest {
         assertEquals(7, cosh.size());
 
         // expansion test
-        for (int i = 1; i <= 30000; i++) {
+        int maxTest = 200;
+        for (int i = 1; i <= maxTest; i++) {
             assertNull(cosh.put(i, "V_" + i));
         }
 
         // size test
-        assertEquals(30007, cosh.size());
+        assertEquals(maxTest + 7, cosh.size());
 
-        for (int i = 1; i <= 30000; i++) {
+        for (int i = 1; i <= maxTest; i++) {
             assertEquals("V_" + i, cosh.get(i));
         }
 
         // other objects
-        Cosh kCosh = new Cosh(1, 1);
-        Cosh vCosh = new Cosh("1", "1");
+        Cosh kCosh = new Cosh(12, 0.5f);
+        Cosh vCosh = new Cosh(2, 1f);
         assertNull(cosh.put(kCosh, vCosh));
         assertEquals(vCosh, cosh.get(kCosh));
 
@@ -96,11 +97,11 @@ class CoshTest {
         assertNull(cosh.put("0", "zero"));
         assertNull(cosh.put("1", "one link"));
         // collision
-        assertNull(cosh.put("49", "two link"));
+        assertNull(cosh.put("10", "two link"));
         // collision
-        assertNull(cosh.put("58", "three link"));
+        assertNull(cosh.put("69", "three link"));
         // collision
-        assertNull(cosh.put("94", "four link"));
+        assertNull(cosh.put("78", "four link"));
         assertNull(cosh.put("2", "many"));
 
         assertNull(cosh.put("null", null));
@@ -113,20 +114,20 @@ class CoshTest {
         // попытка удалить запись,
         // у которой хэш ключа совпадает с корзиной,
         // содержащей несколько записей
-        assertNull(cosh.remove("85"));
+        assertNull(cosh.remove("96"));
         assertEquals(8, cosh.size());
 
         // remove middle form collision (two link)
-        assertEquals("two link", cosh.remove("49"));
-        assertEquals("four link", cosh.get("94"));
-        assertEquals("three link", cosh.get("58"));
+        assertEquals("two link", cosh.remove("10"));
+        assertEquals("four link", cosh.get("78"));
+        assertEquals("three link", cosh.get("69"));
         assertEquals("one link", cosh.get("1"));
         assertEquals(7, cosh.size());
 
         // remove last form collision (four link)
-        assertEquals("four link", cosh.remove("94"));
+        assertEquals("four link", cosh.remove("78"));
         assertEquals("one link", cosh.get("1"));
-        assertEquals("three link", cosh.get("58"));
+        assertEquals("three link", cosh.get("69"));
         assertEquals(6, cosh.size());
 
         // remove first form collision (one link)
@@ -136,7 +137,7 @@ class CoshTest {
         // remove all
         assertEquals("zero", cosh.remove("0"));
         assertEquals("many", cosh.remove("2"));
-        assertEquals("three link", cosh.remove("58"));
+        assertEquals("three link", cosh.remove("69"));
         assertEquals(2, cosh.size());
 
         assertEquals("null", cosh.remove(null));

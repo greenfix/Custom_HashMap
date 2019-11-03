@@ -2,47 +2,39 @@ package ru.innopolis;
 
 public class Cosh {
 
-    private static final float LOAD_FACTOR = 0.75f;
     private static final float FACTOR = 2.0f;
 
-    private int capacity = 16;
+    private float loadFactor;
+    private int capacity;
     private int size = 0;
-    private Uzel[] kase = new Uzel[capacity];
+    private Uzel[] kase;
 
     /**
      *
      */
     public Cosh() {
-
+        capacity = 16;
+        loadFactor = 0.75f;
+        kase = new Uzel[capacity];
     }
 
     /**
-     * @param K key
-     * @param V value
+     * @param capacity
      */
-    public Cosh(Object K, Object V) {
-        this.put(K, V);
+    public Cosh(int capacity) {
+        this.capacity = capacity;
+        loadFactor = 0.75f;
+        kase = new Uzel[capacity];
     }
 
     /**
-     * @param K key
-     * @return index of basket
+     * @param capacity   capacity
+     * @param LoadFactor LoadFactor
      */
-    public int getIndexBasket(Object K) {
-
-        return (K == null) ? 0 : ((Math.abs(K.hashCode()) % capacity));
-    }
-
-    /**
-     *
-     */
-    private void expansionKase() {
-        capacity = (int) (capacity * FACTOR);
-        Uzel[] expansion = new Uzel[capacity];
-        for (int i = 0; i < kase.length; i++) {
-            expansion[i] = kase[i];
-        }
-        kase = expansion;
+    public Cosh(int capacity, float LoadFactor) {
+        this.capacity = capacity;
+        this.loadFactor = LoadFactor;
+        kase = new Uzel[capacity];
     }
 
     /**
@@ -52,34 +44,11 @@ public class Cosh {
      * if the key exists then the value is overwritten
      */
     public Object put(Object K, Object V) {
-        if ((1f * size / capacity) >= LOAD_FACTOR) {
+        if ((1f * size / capacity) >= loadFactor) {
             expansionKase();
         }
-        int hash = getIndexBasket(K);
-        Uzel uzel = kase[hash];
-        if (uzel == null) {
-            // first in basket - simple add
-            kase[hash] = new Uzel(hash, K, V, null);
-            size++;
-        } else {
-            while (true) {
-                if (ifNeedUzel(K, uzel)) {
-                    // rewrite
-                    Object oldValue = uzel.getValue();
-                    uzel.setValue(V);
-                    return oldValue;
-                }
-                if (uzel.getNext() == null) {
-                    // last in basket - add to end
-                    uzel.setNext(new Uzel(hash, K, V, null));
-                    size++;
-                    break;
-                }
-                uzel = uzel.getNext();
-            }
-        }
 
-        return null;
+        return putService(K, V, kase);
     }
 
     /**
@@ -87,14 +56,14 @@ public class Cosh {
      * @return true if this map contains a mapping for the specified key
      */
     public boolean containsKey(Object K) {
-        int hash = getIndexBasket(K);
-        Uzel uzel = kase[hash];
+        int basket = getIndexBasket(K);
+        Uzel uzel = kase[basket];
         if (uzel == null) {
 
             return false;
         }
         while (true) {
-            if (ifNeedUzel(K, uzel)) {
+            if (isNeedUzel(K, uzel)) {
                 return true;
             }
             uzel = uzel.getNext();
@@ -115,7 +84,7 @@ public class Cosh {
             return null;
         }
         while (true) {
-            if (ifNeedUzel(K, uzel)) {
+            if (isNeedUzel(K, uzel)) {
                 break;
             }
             uzel = uzel.getNext();
@@ -132,8 +101,8 @@ public class Cosh {
      * @return value
      */
     public Object remove(Object K) {
-        int hash = getIndexBasket(K);
-        Uzel uzel = kase[hash];
+        int basket = getIndexBasket(K);
+        Uzel uzel = kase[basket];
         if (uzel == null) {
 
             return null;
@@ -141,39 +110,26 @@ public class Cosh {
         int level = 0;
         Uzel prevUzel = uzel;
         while (true) {
-            if (ifNeedUzel(K, uzel)) {
+            if (isNeedUzel(K, uzel)) {
                 break;
             }
             level++;
             prevUzel = uzel;
             uzel = uzel.getNext();
             if (uzel == null) {
+
                 return null;
             }
         }
-
         Object oldValue = uzel.getValue();
         if (level == 0) {
-            kase[hash] = uzel.getNext();
+            kase[basket] = uzel.getNext();
         } else {
             prevUzel.setNext(uzel.getNext());
         }
-
         size--;
 
         return oldValue;
-    }
-
-    /**
-     * @param K key
-     * @param uzel uzel
-     * @return true if needle
-     */
-    public boolean ifNeedUzel(Object K, Uzel uzel) {
-        Object keyUzel = uzel.getKey();
-        return ((keyUzel == null && K == null) ||
-                (K != null && K.equals(keyUzel)) ||
-                (keyUzel != null && keyUzel.equals(K)));
     }
 
     /**
@@ -182,6 +138,88 @@ public class Cosh {
     public int size() {
 
         return size;
+    }
+
+    /**
+     *
+     * @param K key
+     * @param V value
+     * @param nodes nodes
+     * @return Object
+     */
+    private Object putService(Object K, Object V, Uzel[] nodes) {
+        int basket = getIndexBasket(K);
+        Uzel uzel = nodes[basket];
+        if (uzel == null) {
+            // first in basket - simple add
+            nodes[basket] = new Uzel(K, V, null);
+            size++;
+        } else {
+            while (true) {
+                if (isNeedUzel(K, uzel)) {
+                    // rewrite
+                    Object oldValue = uzel.getValue();
+                    uzel.setValue(V);
+                    return oldValue;
+                }
+                if (uzel.getNext() == null) {
+                    // last in basket - add to end
+                    uzel.setNext(new Uzel(K, V, null));
+                    size++;
+                    break;
+                }
+                uzel = uzel.getNext();
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @param K key
+     * @return index of basket
+     */
+    private int getIndexBasket(Object K) {
+        if (K == null) {
+            return 0;
+        }
+        int h = K.hashCode();
+        h ^= (h >>> 20) ^ (h >>> 12);
+        h = h ^ (h >>> 7) ^ (h >>> 4);
+
+        return (h & (capacity - 1));
+    }
+
+    /**
+     *
+     */
+    private void expansionKase() {
+        capacity = (int) (capacity * FACTOR);
+        Uzel[] expansion = new Uzel[capacity];
+        Uzel uzel;
+        size = 0;
+        for (int i = 0; i < kase.length; i++) {
+            uzel = kase[i];
+            if (uzel != null) {
+                do {
+                    putService(uzel.getKey(), uzel.getValue(), expansion);
+                    uzel = uzel.getNext();
+                } while (uzel != null);
+            }
+        }
+        kase = expansion;
+    }
+
+    /**
+     * @param K key
+     * @param uzel uzel
+     * @return true if needle
+     */
+    private boolean isNeedUzel(Object K, Uzel uzel) {
+        Object keyUzel = uzel.getKey();
+        return ((keyUzel == null && K == null) ||
+                (K != null && K.equals(keyUzel)) ||
+                (keyUzel != null && keyUzel.equals(K)));
     }
 
 }
